@@ -1,6 +1,6 @@
 """Retrieve: question -> (rewrite / HyDE) -> BGE vector -> Pinecone -> list[Hit],
-or with RETRIEVAL=hybrid (Day 32): Pinecone and BM25 lists fused by RRF.
-With RERANK=1 (Day 33) a cross-encoder re-scores those hits against the question.
+or with RETRIEVAL=hybrid: Pinecone and BM25 lists fused by RRF.
+With RERANK=1 a cross-encoder re-scores those hits against the question.
 
 Hit text comes from `chunks.jsonl`, the same file the live index was built from
 (README, re-index step 4), not from Pinecone metadata. BM25 is built from the
@@ -78,7 +78,7 @@ REWRITE_PROMPT = (
     "Record the query with the record_query tool."
 )
 # Forced tool call: the query arrives as a JSON field, so commentary cannot leak
-# into it (Day 31: a free-text reply once carried the model's reasoning), and a
+# into it (in testing, a free-text reply once carried the model's reasoning), and a
 # forced tool_choice turns thinking off.
 REWRITE_TOOL = {
     "name": "record_query",
@@ -156,7 +156,7 @@ def rewrite(
 def gap_query(
     question: str, gap: str, client: anthropic.Anthropic
 ) -> tuple[str, float]:
-    """Search query for what the self-check said the answer is missing (Day 34);
+    """Search query for what the self-check said the answer is missing;
     (query, cost_usd). Only searched: Claude still answers `question`."""
     return _generate(
         GAP_PROMPT,

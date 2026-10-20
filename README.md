@@ -174,8 +174,7 @@ multimodal-rag-engine/
 │   ├── baseline.json           # fixed reference scores for the gate
 │   ├── scores.jsonl            # every full evaluation run
 │   └── eval/                   # trick questions, the fixed sample, follow-up conversations
-├── tests/                      # 63 tests
-└── docs/engineering-log.md     # the full build record behind this README
+└── tests/                      # 63 tests
 ```
 
 ---

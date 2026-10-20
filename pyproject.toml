@@ -16,9 +16,9 @@ dependencies = [
     "python-dotenv",
     "rank-bm25",
     "sentence-transformers",
-    "streamlit",  # the Day 35 app (and tests/test_app.py)
+    "streamlit",  # the app (and tests/test_app.py)
     "unstructured[pdf]>=0.27,<0.28",
-    # eval (Day 29); ragas 0.4.3 fails to import with langchain-community 0.4.x
+    # eval; ragas 0.4.3 fails to import with langchain-community 0.4.x
     "ragas==0.4.3",
     "langchain-anthropic",
     "langchain-community<0.4",

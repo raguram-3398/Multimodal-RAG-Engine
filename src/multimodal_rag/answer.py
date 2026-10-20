@@ -122,7 +122,7 @@ def verify_citations(content: list, hits: list[Hit]) -> list[Citation]:
 def answer(question: str, hits: list[Hit], client: anthropic.Anthropic) -> Answer:
     """Answer from the top ANSWER_K hits with verified citations; abstain without
     calling Claude only if there are no hits. Claude decides every other abstain
-    (no score threshold since Day 30: it caught no unanswerable query Claude
+    (no score threshold: in testing it caught no unanswerable query Claude
     missed and blocked answerable ones with the gold page in the top 10).
 
     If Claude stops with `refusal`, returns REFUSAL_TEXT with `refused=True`:

@@ -198,7 +198,7 @@ def test_write_baseline_never_overwrites(tmp_path, monkeypatch) -> None:
 
 def test_ragas_judge_uses_the_given_key_not_the_environment(monkeypatch) -> None:
     """The app passes the visitor's key; ChatAnthropic would otherwise fall back
-    to ANTHROPIC_API_KEY (Ram's key on the Mac)."""
+    to ANTHROPIC_API_KEY (the developer's own key)."""
     from multimodal_rag.evaluate import ragas_llm
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-env")

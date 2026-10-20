@@ -1,4 +1,4 @@
-# Day 35 app image. CPU-only torch; BGE and the cross-encoder are downloaded at
+# App image. CPU-only torch; BGE and the cross-encoder are downloaded at
 # build time so the container never fetches models at startup.
 FROM python:3.12-slim
 

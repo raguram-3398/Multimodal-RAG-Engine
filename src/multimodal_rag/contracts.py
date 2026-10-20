@@ -30,14 +30,14 @@ class Chunk:
     page: int
     text: str
     n_tokens: int
-    kind: str  # "text" (PDF text) or "vision" (generated description, Day 30)
+    kind: str  # "text" (PDF text) or "vision" (generated description)
 
 
 @dataclass(frozen=True)
 class Hit:
     """One retrieved chunk and its retrieval score: cosine similarity (vector),
-    BM25 score (`bm25_search`), RRF score (hybrid, Day 32) or cross-encoder
-    logit (RERANK=1, Day 33)."""
+    BM25 score (`bm25_search`), RRF score (hybrid) or cross-encoder
+    logit (RERANK=1)."""
 
     chunk: Chunk
     score: float
@@ -45,7 +45,7 @@ class Hit:
 
 @dataclass(frozen=True)
 class SearchQuery:
-    """What retrieval embeds for one user question (Day 31).
+    """What retrieval embeds for one user question.
 
     `question` is what Claude answers: the user's question, or for a follow-up
     its standalone rewrite (`answer` takes no chat history). `text` is what BGE
@@ -65,7 +65,7 @@ class Citation:
 
     `page` is 0-indexed. `score` is the cited chunk's `Hit.score`
     (cosine, RRF or cross-encoder logit, by the flags).
-    `generated` marks quotes from generated vision descriptions (Day 30).
+    `generated` marks quotes from generated vision descriptions.
     """
 
     chunk_id: str
@@ -86,8 +86,7 @@ class Answer:
     `cost_usd` is 0 when Claude was not called.
     `confidence` = Haiku's 1-10 self-check score of this answer; None when not
     checked (SELF_CHECK off, abstain, refusal). `retried` = the first answer
-    scored below SELF_CHECK_MIN, so this is the answer after one more search
-    (Day 34).
+    scored below SELF_CHECK_MIN, so this is the answer after one more search.
     """
 
     text: str

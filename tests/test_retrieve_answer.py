@@ -371,7 +371,7 @@ def test_query_with_no_keyword_match_still_returns_ranked_hits() -> None:
     assert ce.pairs == [("???", TEXT)]
 
 
-# ------------------------------------------------------------ self-check (Day 34)
+# ------------------------------------------------------------ self-check
 
 CALL_COST = (1000 * 0.10 + 100 * 0.50) / 1e6  # every fake call's usage
 

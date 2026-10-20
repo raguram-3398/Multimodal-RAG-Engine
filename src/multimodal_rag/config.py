@@ -1,4 +1,4 @@
-"""Constants for the Multimodal RAG Engine. Grows day by day. The only runtime
+"""Constants for the Multimodal RAG Engine. The only runtime
 options are the measured ablation flags (environment variables, README: Flags)."""
 
 import os
@@ -44,7 +44,7 @@ QUERIES_PATH: Path = DATASET_DIR / "queries" / "test-00000-of-00001.parquet"
 QRELS_PATH: Path = DATASET_DIR / "qrels" / "test-00000-of-00001.parquet"
 EVAL_DIR: Path = DATA_DIR / "eval"
 UNANSWERABLE_PATH: Path = EVAL_DIR / "unanswerable_en.jsonl"
-SAMPLE_PATH: Path = EVAL_DIR / "sample.json"  # fixed once on Day 28, never changed
+SAMPLE_PATH: Path = EVAL_DIR / "sample.json"  # fixed before any tuning, never changed
 SAMPLE_SIZE: int = 60  # answerable queries; plus all 20 unanswerable
 SAMPLE_SEED: int = 28
 VISUAL_CONTENT: frozenset[str] = frozenset({"Chart", "Infographic", "Table", "Image"})
@@ -55,7 +55,7 @@ QUERY_PREFIX: str = "Represent this sentence for searching relevant passages: "
 TOP_K: int = 20  # chunks fetched from Pinecone (also the rerank budget)
 EVAL_K: int = 10  # distinct pages scored by recall@10 / NDCG@10
 
-# Query transforms (Day 31). REWRITE=1 / HYDE=1 in the environment turn them on.
+# Query transforms. REWRITE=1 / HYDE=1 in the environment turn them on.
 # A follow-up (non-empty chat history) is always rewritten, flag or not.
 REWRITE: bool = os.environ.get("REWRITE") == "1"
 HYDE: bool = os.environ.get("HYDE") == "1"
@@ -63,17 +63,17 @@ REWRITE_MAX_TOKENS: int = 1024  # forced tool call, no thinking; one line
 HYDE_MAX_TOKENS: int = 2048  # thinking counts; the passage is ~100 words
 FOLLOWUPS_PATH: Path = EVAL_DIR / "followups.jsonl"  # 10 two-turn tests
 
-# Hybrid retrieval (Day 32): BM25 and vector search fused by RRF. Default since
-# Ram's Mac run passed the gate (2026-10-12); RETRIEVAL=vector for vector only.
+# Hybrid retrieval: BM25 and vector search fused by RRF. Default since
+# the Mac run passed the gate (2026-10-12); RETRIEVAL=vector for vector only.
 RETRIEVAL: str = os.environ.get("RETRIEVAL", "hybrid")  # "vector" or "hybrid"
 RRF_K: int = 60  # RRF constant from Cormack et al. (2009); not tuned
 # rank_bm25's BM25Okapi floors a negative IDF (term in > half the chunks) at
 # epsilon x mean IDF. Its default 0.25 gave "the", "of", "and", "in", "for", "a",
-# "to" IDF 1.79, above "fda" (1.21) and "drug" (0.97). 0 scores them 0 (Day 32).
+# "to" IDF 1.79, above "fda" (1.21) and "drug" (0.97). 0 scores them 0.
 BM25_EPSILON: float = 0.0
 
-# Reranker (Day 33): a cross-encoder re-scores the TOP_K retrieved chunks against
-# the question, best first. Default since Ram's Mac run passed the gate with the
+# Reranker: a cross-encoder re-scores the TOP_K retrieved chunks against
+# the question, best first. Default since the Mac run passed the gate with the
 # version/year abstain rule (2026-10-13); RERANK=0 turns it off.
 RERANK: bool = os.environ.get("RERANK", "1") == "1"
 RERANK_MODEL: str = "cross-encoder/ms-marco-MiniLM-L6-v2"  # 512-token pair limit
@@ -83,21 +83,21 @@ CLAUDE_MODEL: str = "claude-haiku-5-5"  # never pass `temperature` (400 on 5.5)
 CLAUDE_TIMEOUT_S: float = 30.0  # per attempt; the SDK retries twice on its own
 ANSWER_K: int = 10  # top chunks sent to Claude as documents
 ANSWER_MAX_TOKENS: int = (
-    4096  # 2048 cut one Day 29 eval answer (1,024 cut 2/8 on Day 28)
+    4096  # 2048 cut one eval answer (1,024 cut 2 of 8 spot-check answers)
 )
 PRICE_IN_PER_MTOK: float = 0.10  # Haiku 5.5, prompts <= 100k tokens (pricing page)
 PRICE_OUT_PER_MTOK: float = 0.50
 ABSTAIN_TEXT: str = "The documents do not contain the answer."
 REFUSAL_TEXT: str = "The model declined to answer this question."
 
-# Self-check (Day 34): Haiku scores each answer 1-10; below SELF_CHECK_MIN, one
+# Self-check: Haiku scores each answer 1-10; below SELF_CHECK_MIN, one
 # more search with a query rewritten from the stated gap, then the final answer.
 # SELF_CHECK=1 turns it on.
 SELF_CHECK: bool = os.environ.get("SELF_CHECK") == "1"
 SELF_CHECK_MIN: int = 6  # from the plan; not tuned
 CHECK_MAX_TOKENS: int = 1024  # forced tool call, no thinking; a score + a sentence
 
-# Vision descriptions (Day 30)
+# Vision descriptions
 VISION_PATH: Path = DATA_DIR / "vision.jsonl"  # one description per low-text slide
 VISION_MAX_CHARS: int = 300  # slide pages with less chunk text get a description
 # 100 dpi = 1000x750 px per slide (~970 visual tokens); on 3 measured slides the
@@ -106,7 +106,7 @@ VISION_DPI: int = 100
 VISION_MAX_TOKENS: int = 8192  # thinking counts; measured max 1,581 output tokens
 VISION_CONTENT: tuple[str, ...] = ("Chart", "Infographic", "Image")  # recall split
 
-# Eval pipeline (Day 29)
+# Eval pipeline
 SCORES_PATH: Path = DATA_DIR / "scores.jsonl"  # one line per full eval run
 EVAL_WORKERS: int = 8  # parallel Claude calls for answers and the judge
 # Haiku 5.5 thinks by default; thinking tokens count against max_tokens (and are
@@ -116,12 +116,12 @@ RAGAS_MAX_TOKENS: int = 16384
 JUDGE_MAX_TOKENS: int = 512
 # Gate: a run fails if a gated metric is below the baseline mean by more than
 # its threshold. data/baseline.json holds the mean of BASELINE_RUNS unchanged full
-# runs on Ram's Mac; threshold = max(floor, max - min of those runs). Floors: 0.05
+# runs on the Mac; threshold = max(floor, max - min of those runs). Floors: 0.05
 # for faithfulness and answer relevancy; 0.005 for recall@10 and NDCG@10 (no
-# Claude calls without REWRITE/HYDE: identical on every Mac run since Day 29); 0
+# Claude calls without REWRITE/HYDE: identical on every Mac run); 0
 # for unanswerable abstain (no drop beyond the baseline runs' own spread); 2/60
 # for answerable answered (the same unchanged code flipped 2 queries, 152 and
-# 212, in an earlier sandbox pair).
+# 212, in an earlier pair of runs).
 BASELINE_PATH: Path = DATA_DIR / "baseline.json"
 BASELINE_RUNS: int = 5
 GATE_FLOORS: dict[str, float] = {
@@ -133,7 +133,7 @@ GATE_FLOORS: dict[str, float] = {
     "answer_answerable": 2 / 60,
 }
 
-# App (Day 35): one Streamlit page; visitors bring their own Anthropic key.
+# App: one Streamlit page; visitors bring their own Anthropic key.
 # Questions per browser session (resets on page reload). Visitors pay for
 # Claude; this limits Pinecone free-tier requests and the 2 shared vCPUs.
 SESSION_QUERY_CAP: int = 20

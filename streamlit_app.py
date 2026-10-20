@@ -1,4 +1,4 @@
-"""Day 35: one Streamlit page over the RAG pipeline (hybrid + rerank + the
+"""One Streamlit page over the RAG pipeline (hybrid + rerank + the
 version/year rule; SELF_CHECK off). Each visitor brings their own Anthropic key;
 the container holds only PINECONE_API_KEY.
 
@@ -40,7 +40,7 @@ def get_retriever() -> Retriever:
     """One Retriever per server process, shared by every session: it is ~1.2 GB
     of process memory (torch, BGE, the cross-encoder, BM25; measured), which
     would not fit once per visitor. 8 searches from 4 threads matched the
-    sequential results (Day 35)."""
+    sequential results."""
     return Retriever()
 
 

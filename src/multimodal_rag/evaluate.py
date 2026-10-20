@@ -4,8 +4,8 @@ Free retrieval eval (no Claude): page-level recall@10 and NDCG@10 on all 364
 English queries, split by visual content type, and the fixed eval sample.
     python -m multimodal_rag.evaluate
 
-Both follow the REWRITE / HYDE flags (Day 31), RETRIEVAL (Day 32) and RERANK
-(Day 33), e.g. `RERANK=1 python -m ...`.
+Both follow the REWRITE / HYDE flags, RETRIEVAL and RERANK,
+e.g. `RERANK=1 python -m ...`.
 
 Ten two-turn conversations (Claude rewrites the follow-ups; retrieval metrics only):
     python -m multimodal_rag.evaluate followups
@@ -13,7 +13,7 @@ Ten two-turn conversations (Claude rewrites the follow-ups; retrieval metrics on
 Full eval (Claude): answers the fixed 60 + 20 sample, scores it with RAGAS, the
 Haiku judge and the abstain rule, gates it against data/baseline.json (not
 gated while that file is missing) and appends it to data/scores.jsonl. With
-SELF_CHECK=1 (Day 34) each answer is self-checked and retried once below
+SELF_CHECK=1 each answer is self-checked and retried once below
 SELF_CHECK_MIN; the retried queries' first answers are scored too, for a paired
 before/after.
     python -m multimodal_rag.evaluate full "label"
@@ -111,7 +111,7 @@ def make_sample(queries: pd.DataFrame) -> dict:
 
     Strata = query_type_for_generation x visual; each stratum gets its share of
     SAMPLE_SIZE by largest remainder. Written once to SAMPLE_PATH; if the file
-    exists it is returned unchanged, so the sample never moves after Day 28.
+    exists it is returned unchanged, so the sample never moves once written.
     """
     if SAMPLE_PATH.is_file():
         return json.loads(SAMPLE_PATH.read_text())
@@ -255,7 +255,7 @@ def conversation_scores(
 class Result:
     """One sample question run through the pipeline. `reference` is None for
     the unanswerable queries; `hits` are the ANSWER_K chunks Claude saw.
-    `first` = the same question before its self-check retry (Day 34), kept to
+    `first` = the same question before its self-check retry, kept to
     score the retry pairwise; None when there was no retry."""
 
     query_id: str
@@ -399,7 +399,7 @@ def ragas_scores(results: list[Result]) -> tuple[pd.DataFrame, float]:
     scored on every answerable result. Faithfulness and answer relevancy judge
     the answer text, so they are scored only where the pipeline answered: an
     abstain has no claims to check, yet RAGAS scored false abstains 0.65
-    faithfulness on average (up to 1.0) on Day 29. Abstains are NaN in those two
+    faithfulness on average (up to 1.0) early on. Abstains are NaN in those two
     columns by design and are counted by `abstain_scores` instead.
 
     Judge = `ragas_llm()`; embeddings = BGE, for answer relevancy only. A score
@@ -437,7 +437,7 @@ def ragas_scores(results: list[Result]) -> tuple[pd.DataFrame, float]:
 def live_scores(
     question: str, ans: Answer, hits: list[Hit], api_key: str, emb
 ) -> tuple[float, float, float]:
-    """RAGAS faithfulness and answer relevancy of one answered question (Day 35
+    """RAGAS faithfulness and answer relevancy of one answered question (the
     app), judged by Haiku on `api_key`; (faithfulness, answer_relevancy,
     cost_usd). No reference exists for a visitor's question, so the
     reference-based metrics are not computed. NaN = RAGAS could not score it.
@@ -538,7 +538,7 @@ def gate(current: dict[str, float], baseline: dict) -> list[str]:
 def retry_scores(
     results: list[Result], per_query: pd.DataFrame, client: anthropic.Anthropic
 ) -> tuple[dict, float]:
-    """Self-check summary (Day 34) and the retried answerable queries scored
+    """Self-check summary and the retried answerable queries scored
     pairwise: their first answer and hits (RAGAS + judge, scored here) vs their
     final ones (from `per_query`). Returns (summary, cost of the extra scoring).
     """

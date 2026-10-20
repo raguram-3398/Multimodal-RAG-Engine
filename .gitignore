@@ -37,3 +37,6 @@ htmlcov/
 
 # Raw dataset (ViDoRe V3 Pharmaceuticals, ~800 MB): downloaded separately, never committed
 datasets/
+
+# Personal build log, kept locally only
+docs/engineering-log.md

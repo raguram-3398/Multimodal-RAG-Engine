@@ -1,6 +1,6 @@
 {
  "created": "2026-10-19T22:11:13+00:00",
- "reason": "v1: 5 unchanged Mac runs, hybrid + rerank, version/year abstain rule, self-check/rewrite/HyDE off",
+ "reason": "v1: 5 unchanged Mac runs, hybrid + rerank, version/year abstain rule, self-check/rewrite/HyDE off. Fingerprint re-stamped 2026-10-19 after a comment- and docstring-only cleanup of the package (parsed code identical in every file; previous fingerprint 1331da5e)",
  "index": "fda-bge-small-en-v1-5-v2",
  "flags": {
   "rewrite": false,
@@ -16,7 +16,7 @@
   "ragas": "0.4.3",
   "machine": "macOS-27.0.1-arm64-arm-64bit"
  },
- "fingerprint": "1331da5e0445b1d08cb9b0223cf7f548fee33ec3f69cc5241db188007948a211",
+ "fingerprint": "68504c547fa929e0226c629b14dcd556cc8f90ecaa3117cdfdee7052b0062753",
  "runs": [
   "2026-10-19T21:21:08+00:00",
   "2026-10-19T21:32:24+00:00",
