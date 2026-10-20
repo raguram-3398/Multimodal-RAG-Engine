@@ -1,0 +1,24 @@
+{"id": "dm01", "query": "What percentage of ANDAs were refused to receive (RTR) in FY2020?", "expected_status": "abstain", "near_miss": "FY2015-FY2018 RTR rates: 19, 25, 13, ~9% (AAMGRxBiosimsSept2018_UHL p.13)"}
+{"id": "dm02", "query": "How many new drug shortages did CDER record in 2024?", "expected_status": "abstain", "near_miss": "2021: 38 new shortages (FDLI_FDA_CDER_PCavazzoni p.4)"}
+{"id": "dm03", "query": "What percentage of drugs approved in FY 2021 received Breakthrough Therapy designation?", "expected_status": "abstain", "near_miss": "FY 2019: 24% (CDER_New_Drugs_Program_2019_Update p.16)"}
+{"id": "dm04", "query": "How many drug shortages did CDER prevent in 2024?", "expected_status": "abstain", "near_miss": "2021: 303 prevented (FDLI_FDA_CDER_PCavazzoni p.4)"}
+{"id": "dm05", "query": "What was the U.S. death rate from synthetic opioids other than methadone in 2023?", "expected_status": "abstain", "near_miss": "2021 and 2022 rates (final_ce_dental_caries p.7)"}
+{"id": "dm06", "query": "What were the top 3 reasons for refuse-to-receive in the FY2019 ANDA cohort?", "expected_status": "abstain", "near_miss": "FY2017 cohort: stability, dissolution, impurities (AAMGRxBiosimsSept2018_UHL p.14)"}
+{"id": "dm07", "query": "How many product-specific guidances did FDA publish in FY2023, and how many were for complex products?", "expected_status": "abstain", "near_miss": "FY21: 135 PSGs, 53 complex (AAMkeynoteChoe2021 p.7)"}
+{"id": "dm21", "query": "Under GDUFA III, what percentage of ANDAs are refused to receive?", "expected_status": "abstain", "near_miss": "RTR rates for GDUFA I and FY2018 GDUFA II (AAMGRxBiosimsSept2018_UHL p.13); GDUFA III named on 5 slides"}
+{"id": "dm22", "query": "What first-cycle approval rate has FDA achieved for ANDAs under GDUFA III?", "expected_status": "abstain", "near_miss": "FY2015 cohort first-cycle rates (FDA_Office_of_Generic_Drugs_OGD_Keynote p.14); GDUFA III named on 5 slides"}
+{"id": "dm23", "query": "How many NME NDAs and BLAs did CDER approve in FY 2021?", "expected_status": "abstain", "near_miss": "FY 2019 and FY 2020 snapshots (CDER_New_Drugs_Program_2019_Update)"}
+{"id": "dm24", "query": "Under PDUFA VII, how many breakthrough therapy designations did CDER grant?", "expected_status": "abstain", "near_miss": "breakthrough grants as of 9/30/2019 (CDER_New_Drugs_Program_2019_Update p.21); PDUFA VII named on 3 slides"}
+{"id": "dm08", "query_id": 19, "expected_status": "answer"}
+{"id": "dm09", "query_id": 44, "expected_status": "answer"}
+{"id": "dm10", "query_id": 51, "expected_status": "answer"}
+{"id": "dm11", "query_id": 86, "expected_status": "answer"}
+{"id": "dm12", "query_id": 175, "expected_status": "answer"}
+{"id": "dm13", "query_id": 197, "expected_status": "answer"}
+{"id": "dm14", "query_id": 231, "expected_status": "answer"}
+{"id": "dm15", "query_id": 255, "expected_status": "answer"}
+{"id": "dm16", "query_id": 265, "expected_status": "answer"}
+{"id": "dm17", "query_id": 272, "expected_status": "answer"}
+{"id": "dm18", "query_id": 295, "expected_status": "answer"}
+{"id": "dm19", "query_id": 336, "expected_status": "answer"}
+{"id": "dm20", "query_id": 2069, "expected_status": "answer"}

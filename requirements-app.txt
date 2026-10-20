@@ -1,0 +1,15 @@
+# What the Day 35 app imports (no ingest, OCR or dev tools). torch is installed
+# first, CPU-only, by the Dockerfile. Versions = the sandbox run on 2026-10-15.
+anthropic==1.14.0
+langchain-anthropic==1.7.6
+langchain-community==0.3.31
+langchain-huggingface==1.2.3
+numpy==2.5.4
+pandas==3.0.6
+pinecone==10.0.0
+python-dotenv==1.2.4
+ragas==0.4.3
+rank-bm25==0.2.2
+sentence-transformers==6.1.0
+streamlit==1.66.0
+transformers==5.19.0

@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+
+# Virtual env
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+**/__pycache__
+*.pyc
+**/*.pyc
+*.pyo
+**/*.pyo
+.mypy_cache/
+.ruff_cache/
+
+# Build / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment secrets
+.env
+.env.*
+
+# Logs
+*.log
+**/*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+**/Thumbs.db
+
+# For smaller image size
+README.md
+docs/
+tests/
+.github/
+
+# Not used by the app: raw dataset (~800 MB), ingest-only vision descriptions, eval data
+datasets/
+data/vision.jsonl
+data/eval/

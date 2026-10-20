@@ -1,0 +1,11 @@
+# Local run of the Day 35 app: docker compose up --build, then http://localhost:7860
+# Only PINECONE_API_KEY enters the container (read from .env by compose's
+# variable substitution). ANTHROPIC_API_KEY stays out, so every Claude call runs
+# on the key the visitor types in.
+services:
+  app:
+    build: .
+    ports:
+      - "7860:7860"
+    environment:
+      PINECONE_API_KEY: ${PINECONE_API_KEY:?set PINECONE_API_KEY in .env}
