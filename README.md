@@ -14,6 +14,44 @@ Paste your own Anthropic API key from [console.anthropic.com](https://console.an
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph OFFLINE["Built once"]
+    PDF["52 FDA PDFs<br/>2,313 pages"] --> LOAD["Read pages<br/>text, OCR on low-text pages"]
+    LOAD --> CHUNK["Cut into passages<br/>≤ 510 tokens, never across a page"]
+    SLIDES["524 chart slides"] --> VIS["Slide descriptions<br/>Claude Haiku"]
+    VIS --> CHUNK
+    CHUNK --> EMB["Embed<br/>BGE-small"]
+    EMB --> PC[("Pinecone")]
+    CHUNK --> CF[("chunks.jsonl")]
+  end
+  subgraph ONLINE["Per question"]
+    Q["Question<br/>+ conversation"] --> RW["Rewrite follow-ups"]
+    RW --> VEC["Meaning search"]
+    RW --> BM["Keyword search (BM25)"]
+    PC --> VEC
+    CF --> BM
+    VEC --> RRF["Merge by rank (RRF)"]
+    BM --> RRF
+    RRF --> RR["Rerank top 20"]
+    RR --> ANS["Answer with citations, or decline<br/>Claude Haiku"]
+  end
+  subgraph EVAL["Every change"]
+    GS["364 questions + fixed 60 + 20 sample"] --> MET["recall · NDCG · RAGAS · LLM judge · declines"]
+    MET --> GATE{"Gate vs<br/>baseline.json"}
+    GATE --> LOG[("scores.jsonl")]
+  end
+  ANS --> UI["Streamlit app"]
+  GS -.->|same pipeline| RW
+  ANS -.->|answers + pages read| MET
+```
+
+Switches for the measured options (environment variables): `REWRITE`, `HYDE`, `RETRIEVAL=vector|hybrid`, `RERANK`, `SELF_CHECK`. The defaults are the kept system: hybrid search, reranker on, the rest off.
+
+---
+
 ## What It Does
 
 - **Finds the right pages, including charts.** 524 slides are mostly pictures with little text. Claude described each one (title, every number with its label), so a question about a bar chart can find that chart.
@@ -114,42 +152,6 @@ Until this step, each run was compared to the last run that passed. Small drops 
 The fix: the final system was run 5 times, unchanged, on the Mac, and the averages were saved as a fixed file (`data/baseline.json`). Every future run is compared to that file. Each score's threshold is the larger of 0.05 and its measured spread across the 5 runs. Retrieval scores were identical in all 5 runs, so their threshold is 0.005. The file also records a fingerprint of the code and data, and the models and package versions behind it.
 
 What it showed: luck moves these scores less than the earlier history suggested (answer relevancy varied by 0.021, not 0.08). A sixth run, compared to the new file, passed. Cost of the baseline: $3.35.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TB
-  subgraph OFFLINE["Built once"]
-    PDF["52 FDA PDFs<br/>2,313 pages"] --> LOAD["Read pages<br/>text, OCR on low-text pages"]
-    LOAD --> CHUNK["Cut into passages<br/>≤ 510 tokens, never across a page"]
-    SLIDES["524 chart slides"] --> VIS["Slide descriptions<br/>Claude Haiku"]
-    VIS --> CHUNK
-    CHUNK --> EMB["Embed<br/>BGE-small"]
-    EMB --> PC[("Pinecone")]
-    CHUNK --> CF[("chunks.jsonl")]
-  end
-  subgraph ONLINE["Per question"]
-    Q["Question<br/>+ conversation"] --> RW["Rewrite follow-ups"]
-    RW --> VEC["Meaning search"]
-    RW --> BM["Keyword search (BM25)"]
-    PC --> VEC
-    CF --> BM
-    VEC --> RRF["Merge by rank (RRF)"]
-    BM --> RRF
-    RRF --> RR["Rerank top 20"]
-    RR --> ANS["Answer with citations, or decline<br/>Claude Haiku"]
-  end
-  subgraph EVAL["Every change"]
-    GS["364 questions + fixed 60 + 20 sample"] --> MET["recall · NDCG · RAGAS · LLM judge · declines"]
-    MET --> GATE{"Gate vs<br/>baseline.json"}
-    GATE --> LOG[("scores.jsonl")]
-  end
-  ANS --> UI["Streamlit app"]
-```
-
-Switches for the measured options (environment variables): `REWRITE`, `HYDE`, `RETRIEVAL=vector|hybrid`, `RERANK`, `SELF_CHECK`. The defaults are the kept system: hybrid search, reranker on, the rest off.
 
 ---
 
