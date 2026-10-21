@@ -23,11 +23,24 @@ dependencies = [
     "langchain-anthropic",
     "langchain-community<0.4",
     "langchain-huggingface",
+    # Declared only to pin them to the CPU index below; uv ignores index pins on
+    # transitive deps. Same torch version as the Dockerfile.
+    "torch==2.14.1",
+    "torchvision==0.29.1",
 ]
 # System tools for OCR: tesseract and poppler (pdftoppm).
 
 [dependency-groups]
 dev = ["black", "pytest", "ruff"]
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.setuptools]
 package-dir = {"" = "src"}
