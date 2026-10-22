@@ -88,7 +88,8 @@ The fixed baseline: the final system run 5 times, unchanged, on an M3 MacBook Ai
 | Live quality scores (RAGAS) after the answer | about 15 s (measured before deployment, on 2 CPUs) |
 | Answer on screen, AWS (t3.small via CloudFront, phone on cellular, stopwatch) | 6.7 s; first answer after the container starts 14.7 s (one sample each) |
 | AWS instance start to app healthy through CloudFront | ≤ 78 s (one stop/start; upper bound) |
-| Peak container memory on AWS, after answering | 896 MiB of 1.87 GiB (cgroup `memory.peak`) |
+| Peak container memory on AWS, after answering | 1006 MiB of 1.87 GiB after 3 questions; 896 MiB after 1 (cgroup `memory.peak`) |
+| AWS rollback to the previous image (already on disk), command to healthy via CloudFront | 7 s (one sample) |
 
 ---
 
@@ -227,6 +228,7 @@ visitor ──HTTPS──► CloudFront ──HTTP :7860──► EC2 (Elastic I
 - **Deploy:** manual, so the instance can stay stopped between sessions: SSH in and run `./deploy.sh <full SHA>`. The instance role (`deploy/ec2-role-policy.json`) can pull from this repository and read one SSM parameter. The Pinecone key is read at deploy time, so changing it in SSM needs a redeploy.
 - **Blast radius:** a bad image breaks the AWS copy only; the Hugging Face Space is separate. The app only reads from Pinecone. A deploy has a few seconds of downtime while the container is replaced. A leaked push key can add new images to ECR but cannot overwrite or delete existing tags, and nothing runs until a SHA is deployed by hand.
 - **Rollback, code:** `./deploy.sh <previous SHA>`. The previous image is usually still on the instance's disk, so the pull only checks the manifest and downloads nothing. ECR and the instance keep at least the last two images.
+- **Rollback drill:** deployed the first CI-built image (`61257fc`), then rolled back to `5ea286b`, timed from the command to CloudFront's health check answering `ok`: 7 s (one sample; target under 5 minutes). Steps: (1) from the Mac, `ssh -i <key> ec2-user@<Elastic IP> './deploy.sh <previous SHA>'`; (2) poll `https://<distribution>/_stcore/health` until it answers `ok`; (3) ask one question and check the answer has citations. The first question after the swap still loads the models (about 15 s). Both images run the same app code (the newer commit changed only CI, `deploy/` and this README), so the drill proves the procedure, not a fix.
 - **Rollback, data:** none. A deploy never writes to Pinecone or to `data/`. A change that needs new embeddings (new model or chunking) would need a new Pinecone index and its own rollback plan.
 - **Cost:** EC2 t3.small $0.0208/hour while running, Elastic IP $0.005/hour always, ECR $0.10/GB-month above 500 MB (each image is about 0.75 GB), CloudFront within the free tier. The instance is stopped at the end of every session.
 
