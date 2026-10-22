@@ -12,6 +12,8 @@ Built with Claude Haiku 5.5 for answers and for reading chart slides, BGE embedd
 
 Paste your own Anthropic API key from [console.anthropic.com](https://console.anthropic.com) in the sidebar. It is kept only for your browser session and is not saved anywhere. Each answer costs about $0.001 on your key, plus about $0.002–0.003 for its live quality scores. The Space runs on Hugging Face's free 2-CPU hardware and sleeps when idle, so the first visit wakes it up.
 
+The same image also runs on AWS (EC2 behind CloudFront, see [Deploy (AWS)](#deploy-aws)). That instance is stopped between sessions, so the Space is the link that is always up.
+
 ---
 
 ## Architecture
@@ -84,6 +86,9 @@ The fixed baseline: the final system run 5 times, unchanged, on an M3 MacBook Ai
 | Answer on screen, live demo (free 2-CPU Space) | 3.8–4.9 s |
 | First answer after the Space restarts (models load once) | 9.7 s |
 | Live quality scores (RAGAS) after the answer | about 15 s (measured before deployment, on 2 CPUs) |
+| Answer on screen, AWS (t3.small via CloudFront, phone on cellular, stopwatch) | 6.7 s; first answer after the container starts 14.7 s (one sample each) |
+| AWS instance start to app healthy through CloudFront | ≤ 78 s (one stop/start; upper bound) |
+| Peak container memory on AWS, after answering | 896 MiB of 1.87 GiB (cgroup `memory.peak`) |
 
 ---
 
@@ -162,6 +167,10 @@ multimodal-rag-engine/
 ├── pyproject.toml, uv.lock
 ├── Dockerfile, docker-compose.yml, requirements-app.txt
 ├── streamlit_app.py            # the web app
+├── deploy/
+│   ├── deploy.sh               # on EC2: pull one image by commit SHA, replace the container
+│   ├── ec2-trust.json          # lets EC2 assume the instance role
+│   └── ec2-role-policy.json    # the role: pull one ECR repo, read one SSM parameter
 ├── src/multimodal_rag/
 │   ├── config.py               # constants: paths, models, index name, thresholds, prices
 │   ├── contracts.py            # data types passed between stages
