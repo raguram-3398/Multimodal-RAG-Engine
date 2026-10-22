@@ -90,6 +90,7 @@ The fixed baseline: the final system run 5 times, unchanged, on an M3 MacBook Ai
 | AWS instance start to app healthy through CloudFront | ≤ 78 s (one stop/start; upper bound) |
 | Peak container memory on AWS, after answering | 1006 MiB of 1.87 GiB after 3 questions; 896 MiB after 1 (cgroup `memory.peak`) |
 | AWS rollback to the previous image (already on disk), command to healthy via CloudFront | 7 s (one sample) |
+| AWS CPU alarm, both CPUs held at 100% | alarm after 14 min 32 s, email within 1 min; cleared 1 min 53 s after the load stopped (one test) |
 
 ---
 
@@ -222,23 +223,25 @@ push to main ──► GitHub Actions
 Mac ──ssh──► EC2 t3.small: ./deploy.sh <SHA>
                pull that image, read the Pinecone key from SSM, replace the container
 visitor ──HTTPS──► CloudFront ──HTTP :7860──► EC2 (Elastic IP; port open only to CloudFront's IP ranges)
+app output ──► CloudWatch Logs (one stream per SHA, kept 7 days)
+CPU above 80% for 15 min ──► alarm ──► SNS ──► email
 ```
 
 - **Build:** CI pushes as the IAM user `github-ecr-push`, whose policy (`deploy/github-ecr-push-policy.json`) can push to this one repository and nothing else. Its access key is stored only in GitHub Actions secrets. Image tags are the commit SHA and are immutable, so re-running the image job for a SHA already in ECR fails at the push. That is expected.
-- **Deploy:** manual, so the instance can stay stopped between sessions: SSH in and run `./deploy.sh <full SHA>`. The instance role (`deploy/ec2-role-policy.json`) can pull from this repository and read one SSM parameter. The Pinecone key is read at deploy time, so changing it in SSM needs a redeploy.
+- **Deploy:** manual, so the instance can stay stopped between sessions: SSH in and run `./deploy.sh <full SHA>`. The instance role (`deploy/ec2-role-policy.json`) can pull from this repository, read one SSM parameter and write to one log group. The Pinecone key is read at deploy time, so changing it in SSM needs a redeploy.
 - **Blast radius:** a bad image breaks the AWS copy only; the Hugging Face Space is separate. The app only reads from Pinecone. A deploy has a few seconds of downtime while the container is replaced. A leaked push key can add new images to ECR but cannot overwrite or delete existing tags, and nothing runs until a SHA is deployed by hand.
 - **Rollback, code:** `./deploy.sh <previous SHA>`. The previous image is usually still on the instance's disk, so the pull only checks the manifest and downloads nothing. ECR and the instance keep at least the last two images.
 - **Rollback drill:** deployed the first CI-built image (`61257fc`), then rolled back to `5ea286b`, timed from the command to CloudFront's health check answering `ok`: 7 s (one sample; target under 5 minutes). Steps: (1) from the Mac, `ssh -i <key> ec2-user@<Elastic IP> './deploy.sh <previous SHA>'`; (2) poll `https://<distribution>/_stcore/health` until it answers `ok`; (3) ask one question and check the answer has citations. The first question after the swap still loads the models (about 15 s). Both images run the same app code (the newer commit changed only CI, `deploy/` and this README), so the drill proves the procedure, not a fix.
 - **Rollback, data:** none. A deploy never writes to Pinecone or to `data/`. A change that needs new embeddings (new model or chunking) would need a new Pinecone index and its own rollback plan.
-- **Cost:** EC2 t3.small $0.0208/hour while running, Elastic IP $0.005/hour always, ECR $0.10/GB-month above 500 MB (each image is about 0.75 GB), CloudFront within the free tier. The instance is stopped at the end of every session.
+- **Cost:** EC2 t3.small $0.0208/hour while running, Elastic IP $0.005/hour always, ECR $0.10/GB-month above 500 MB (each image is about 0.75 GB), CloudFront, CloudWatch Logs, the alarm and email alerts within the free tier. The instance is stopped at the end of every session.
 
 ### Monitoring
 
-- **Logs:** the container's output goes to CloudWatch Logs through Docker's `awslogs` driver: group `/multimodal-rag-engine/app`, one stream per deployed SHA (so logs line up with deploys and rollbacks), kept 7 days. The Docker daemon on the host sends them with the instance role, which can create streams and write events in this one group only; the group itself is created by hand. The app logs warnings and errors, plus one line per Claude call (stop reason, tokens, cost; no question text or key).
-- **Alarm:** `AWS/EC2` `CPUUtilization` average above 80% for 3 consecutive periods → SNS topic `multimodal-rag-engine-alerts` → email. While the instance is stopped the alarm shows INSUFFICIENT_DATA.
-- **Blast radius:** the `awslogs` driver blocks by default: if the log group is missing or the role cannot write to it, `docker run` fails and the app does not start. The group and the policy therefore exist before any deploy that uses them.
-- **Rollback:** code, `./deploy.sh <previous SHA>`; logging is set by `deploy.sh`, not the image, so earlier SHAs log too. Data, none: logs are only written, and expire after 7 days.
-- **Not monitored, and how it would be added:** memory and disk (the CloudWatch agent; EC2 does not report them), whether the app answers (a health-check canary on `/_stcore/health`), error rate (a metric filter on error lines in the log group, with an alarm on it).
+- **Logs:** everything the app prints goes to CloudWatch Logs and is kept for 7 days. Each deployed version writes to its own stream, named by its commit SHA, so after a rollback the bad version's logs stay separate from the good one's. The app logs warnings, errors and one line per answer (tokens and cost, never the question or the visitor's key). Docker on the instance sends the logs using the instance role, which can write to this one log group and nothing else; the group itself was created by hand with its 7-day limit.
+- **Alarm:** if the instance's CPU averages above 80% for 15 minutes (three 5-minute readings in a row), an email goes out through SNS, and another when it recovers. Tested by running both CPUs at 100%: the alarm fired after 14.5 minutes, the email arrived within a minute, and it cleared 2 minutes after the load stopped. While the instance is stopped the alarm has no data and stays quiet; each start sends one "OK" email.
+- **Blast radius:** if the log group were missing or the role couldn't write to it, the container would not start, because Docker waits for logging by default. So the log group and the permission were created before the first deploy that used them, and a deploy counts as done only when a question through CloudFront gets a cited answer.
+- **Rollback:** code, `./deploy.sh <previous SHA>`; logging is part of the deploy script, not the image, so older versions log too. Data, none: logs are only written, and expire after 7 days.
+- **What it does not catch yet:** the CPU alarm notices overload, not an outage. A crashed app, running out of memory, or errors from Claude or Pinecone would not send an alert. Next additions: the CloudWatch agent for memory and disk (EC2 doesn't report them), an alarm on error lines in the logs, and an outside check that `/_stcore/health` answers.
 
 ---
 
@@ -262,6 +265,7 @@ visitor ──HTTPS──► CloudFront ──HTTP :7860──► EC2 (Elastic I
 - **The gate's 0.05 minimum is wide for faithfulness and answer relevancy.** It is 4–6 times their measured run-to-run variation, so a real drop of 0.03 would pass.
 - **The test sample is small:** 60 real and 20 trick questions, from one dataset.
 - **The AWS copy's CloudFront → EC2 hop is plain HTTP.** The visitor's Anthropic key is encrypted only from the browser to CloudFront; encrypting the last hop needs a domain and a certificate on the instance. The instance's app port is open to CloudFront's managed prefix list, which admits any CloudFront distribution, not only this one.
+- **On AWS, only overload sends an alert.** A crashed app or running out of memory would not; see [Monitoring](#monitoring).
 
 ---
 
