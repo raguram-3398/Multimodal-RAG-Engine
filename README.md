@@ -171,7 +171,7 @@ multimodal-rag-engine/
 ├── deploy/
 │   ├── deploy.sh               # on EC2: pull one image by commit SHA, replace the container
 │   ├── ec2-trust.json          # lets EC2 assume the instance role
-│   ├── ec2-role-policy.json    # the role: pull one ECR repo, read one SSM parameter
+│   ├── ec2-role-policy.json    # the role: pull one ECR repo, read one SSM parameter, write one log group
 │   └── github-ecr-push-policy.json  # CI user: push to one ECR repo
 ├── src/multimodal_rag/
 │   ├── config.py               # constants: paths, models, index name, thresholds, prices
@@ -231,6 +231,14 @@ visitor ──HTTPS──► CloudFront ──HTTP :7860──► EC2 (Elastic I
 - **Rollback drill:** deployed the first CI-built image (`61257fc`), then rolled back to `5ea286b`, timed from the command to CloudFront's health check answering `ok`: 7 s (one sample; target under 5 minutes). Steps: (1) from the Mac, `ssh -i <key> ec2-user@<Elastic IP> './deploy.sh <previous SHA>'`; (2) poll `https://<distribution>/_stcore/health` until it answers `ok`; (3) ask one question and check the answer has citations. The first question after the swap still loads the models (about 15 s). Both images run the same app code (the newer commit changed only CI, `deploy/` and this README), so the drill proves the procedure, not a fix.
 - **Rollback, data:** none. A deploy never writes to Pinecone or to `data/`. A change that needs new embeddings (new model or chunking) would need a new Pinecone index and its own rollback plan.
 - **Cost:** EC2 t3.small $0.0208/hour while running, Elastic IP $0.005/hour always, ECR $0.10/GB-month above 500 MB (each image is about 0.75 GB), CloudFront within the free tier. The instance is stopped at the end of every session.
+
+### Monitoring
+
+- **Logs:** the container's output goes to CloudWatch Logs through Docker's `awslogs` driver: group `/multimodal-rag-engine/app`, one stream per deployed SHA (so logs line up with deploys and rollbacks), kept 7 days. The Docker daemon on the host sends them with the instance role, which can create streams and write events in this one group only; the group itself is created by hand. The app logs warnings and errors, plus one line per Claude call (stop reason, tokens, cost; no question text or key).
+- **Alarm:** `AWS/EC2` `CPUUtilization` average above 80% for 3 consecutive periods → SNS topic `multimodal-rag-engine-alerts` → email. While the instance is stopped the alarm shows INSUFFICIENT_DATA.
+- **Blast radius:** the `awslogs` driver blocks by default: if the log group is missing or the role cannot write to it, `docker run` fails and the app does not start. The group and the policy therefore exist before any deploy that uses them.
+- **Rollback:** code, `./deploy.sh <previous SHA>`; logging is set by `deploy.sh`, not the image, so earlier SHAs log too. Data, none: logs are only written, and expire after 7 days.
+- **Not monitored, and how it would be added:** memory and disk (the CloudWatch agent; EC2 does not report them), whether the app answers (a health-check canary on `/_stcore/health`), error rate (a metric filter on error lines in the log group, with an alarm on it).
 
 ---
 

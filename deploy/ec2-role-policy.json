@@ -22,6 +22,15 @@
       "Effect": "Allow",
       "Action": "ssm:GetParameter",
       "Resource": "arn:aws:ssm:us-east-2:171022098864:parameter/multimodal-rag-engine/pinecone-api-key"
+    },
+    {
+      "Sid": "WriteAppLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-2:171022098864:log-group:/multimodal-rag-engine/app:log-stream:*"
     }
   ]
 }

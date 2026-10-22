@@ -5,6 +5,7 @@ the container holds only PINECONE_API_KEY.
     streamlit run streamlit_app.py   (in Docker: docker compose up)
 """
 
+import logging
 import re
 from dataclasses import dataclass, replace
 
@@ -19,6 +20,11 @@ from multimodal_rag.evaluate import live_scores, ragas_embeddings
 from multimodal_rag.retrieve import QueryError, Retriever
 
 QUOTE_CHARS = 200  # citation quotes shown under an answer are cut to this
+
+# stderr → docker → CloudWatch: warnings from every library, plus answer.py's
+# one INFO line per Claude call (stop reason, tokens, cost; no question text).
+logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s %(message)s")
+logging.getLogger("multimodal_rag.answer").setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
