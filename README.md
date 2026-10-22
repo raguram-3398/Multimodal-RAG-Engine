@@ -170,7 +170,8 @@ multimodal-rag-engine/
 ├── deploy/
 │   ├── deploy.sh               # on EC2: pull one image by commit SHA, replace the container
 │   ├── ec2-trust.json          # lets EC2 assume the instance role
-│   └── ec2-role-policy.json    # the role: pull one ECR repo, read one SSM parameter
+│   ├── ec2-role-policy.json    # the role: pull one ECR repo, read one SSM parameter
+│   └── github-ecr-push-policy.json  # CI user: push to one ECR repo
 ├── src/multimodal_rag/
 │   ├── config.py               # constants: paths, models, index name, thresholds, prices
 │   ├── contracts.py            # data types passed between stages
@@ -210,6 +211,27 @@ uv run python -m multimodal_rag.evaluate full "label"     # full test, gated (~$
 
 ---
 
+## Deploy (AWS)
+
+```
+push to main ──► GitHub Actions
+                   check: ruff, black --check, pytest
+                   image (only after check passes, only on main):
+                     docker build (amd64) ──► ECR multimodal-rag-engine:<commit SHA>
+Mac ──ssh──► EC2 t3.small: ./deploy.sh <SHA>
+               pull that image, read the Pinecone key from SSM, replace the container
+visitor ──HTTPS──► CloudFront ──HTTP :7860──► EC2 (Elastic IP; port open only to CloudFront's IP ranges)
+```
+
+- **Build:** CI pushes as the IAM user `github-ecr-push`, whose policy (`deploy/github-ecr-push-policy.json`) can push to this one repository and nothing else. Its access key is stored only in GitHub Actions secrets. Image tags are the commit SHA and are immutable, so re-running the image job for a SHA already in ECR fails at the push. That is expected.
+- **Deploy:** manual, so the instance can stay stopped between sessions: SSH in and run `./deploy.sh <full SHA>`. The instance role (`deploy/ec2-role-policy.json`) can pull from this repository and read one SSM parameter. The Pinecone key is read at deploy time, so changing it in SSM needs a redeploy.
+- **Blast radius:** a bad image breaks the AWS copy only; the Hugging Face Space is separate. The app only reads from Pinecone. A deploy has a few seconds of downtime while the container is replaced. A leaked push key can add new images to ECR but cannot overwrite or delete existing tags, and nothing runs until a SHA is deployed by hand.
+- **Rollback, code:** `./deploy.sh <previous SHA>`. The previous image is usually still on the instance's disk, so the pull only checks the manifest and downloads nothing. ECR and the instance keep at least the last two images.
+- **Rollback, data:** none. A deploy never writes to Pinecone or to `data/`. A change that needs new embeddings (new model or chunking) would need a new Pinecone index and its own rollback plan.
+- **Cost:** EC2 t3.small $0.0208/hour while running, Elastic IP $0.005/hour always, ECR $0.10/GB-month above 500 MB (each image is about 0.75 GB), CloudFront within the free tier. The instance is stopped at the end of every session.
+
+---
+
 ## What I Did Not Build and Why
 
 | Not built | Why |
@@ -229,6 +251,7 @@ uv run python -m multimodal_rag.evaluate full "label"     # full test, gated (~$
 - **Answer relevancy is lower than at the start** (0.868 in step 1, 0.829 in the baseline). Claude often opens with a hedge about what the documents say, which RAGAS scores as noncommittal.
 - **The gate's 0.05 minimum is wide for faithfulness and answer relevancy.** It is 4–6 times their measured run-to-run variation, so a real drop of 0.03 would pass.
 - **The test sample is small:** 60 real and 20 trick questions, from one dataset.
+- **The AWS copy's CloudFront → EC2 hop is plain HTTP.** The visitor's Anthropic key is encrypted only from the browser to CloudFront; encrypting the last hop needs a domain and a certificate on the instance. The instance's app port is open to CloudFront's managed prefix list, which admits any CloudFront distribution, not only this one.
 
 ---
 
